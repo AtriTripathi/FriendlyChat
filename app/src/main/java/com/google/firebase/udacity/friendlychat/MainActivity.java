@@ -37,8 +37,10 @@ import android.widget.ProgressBar;
 import android.widget.Toast;
 
 import com.firebase.ui.auth.AuthUI;
+import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
+import com.google.android.gms.tasks.Task;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.database.ChildEventListener;
@@ -117,14 +119,6 @@ public class MainActivity extends AppCompatActivity {
         // Initialize progress bar
         mProgressBar.setVisibility(ProgressBar.INVISIBLE);
 
-        // ImagePickerButton shows an image picker to upload a image for a message
-        mPhotoPickerButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                // TODO: Fire an intent to show an image picker
-            }
-        });
-
         // Enable Send button when there's text to send
         mMessageEditText.addTextChangedListener(new TextWatcher() {
             @Override
@@ -150,18 +144,6 @@ public class MainActivity extends AppCompatActivity {
         mSendButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                // TODO: Send messages on click
-
-                // Clear input box
-                mMessageEditText.setText("");
-            }
-        });
-
-        // Send button sends a message and clears the EditText
-        mSendButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                // TODO: Send messages on click
                 FriendlyMessage friendlyMessage = new FriendlyMessage(mMessageEditText.getText()
                         .toString(), mUsername, null);
 
@@ -219,7 +201,6 @@ public class MainActivity extends AppCompatActivity {
         defaultConfigMap.put(FRIENDLY_MSG_LENGTH_KEY,DEFAULT_MSG_LENGTH_LIMIT);
         mFirebaseRemoteConfig.setDefaults(defaultConfigMap);
         fetchConfig();
-
     }
 
     @Override
@@ -238,31 +219,31 @@ public class MainActivity extends AppCompatActivity {
                 // Get a  reference to store the file at chat_photos/<FILENAME>
                 final StorageReference photoRef = mChatPhotosStorageReference.child(selectedImageUri.getLastPathSegment());
 
-//                // Upload file to Firebase storage
-//                photoRef.putFile(selectedImageUri).addOnCompleteListener
-//                        (new OnCompleteListener<UploadTask.TaskSnapshot>() {
-//                            @Override
-//                            public void onComplete(@NonNull Task<UploadTask.TaskSnapshot> task) {
-//                                Task<Uri> uriTask = task.getResult().getStorage().getDownloadUrl();
-//                                while (!uriTask.isComplete());
-//                                Uri downloadUrl = uriTask.getResult();
-//                                FriendlyMessage friendlyMessage =
-//                                        new FriendlyMessage(null, mUsername, downloadUrl.toString());
-//                                mMessageDatabaseReference.push().setValue(friendlyMessage);
-//                            }
-//                        });
-
                 // Upload file to Firebase storage
-                photoRef.putFile(selectedImageUri).addOnSuccessListener
-                        (this, new OnSuccessListener<UploadTask.TaskSnapshot>() {
+                photoRef.putFile(selectedImageUri).addOnCompleteListener
+                        (new OnCompleteListener<UploadTask.TaskSnapshot>() {
                             @Override
-                            public void onSuccess(UploadTask.TaskSnapshot taskSnapshot) {
-                                Uri downloadUrl = taskSnapshot.getStorage().getDownloadUrl().getResult();
+                            public void onComplete(@NonNull Task<UploadTask.TaskSnapshot> task) {
+                                Task<Uri> uriTask = task.getResult().getStorage().getDownloadUrl();
+                                while (!uriTask.isComplete());
+                                Uri downloadUrl = uriTask.getResult();
                                 FriendlyMessage friendlyMessage =
                                         new FriendlyMessage(null, mUsername, downloadUrl.toString());
                                 mMessageDatabaseReference.push().setValue(friendlyMessage);
                             }
                         });
+
+//                // Upload file to Firebase storage
+//                photoRef.putFile(selectedImageUri).addOnSuccessListener
+//                        (this, new OnSuccessListener<UploadTask.TaskSnapshot>() {
+//                            @Override
+//                            public void onSuccess(UploadTask.TaskSnapshot taskSnapshot) {
+//                                Uri downloadUrl = taskSnapshot.getStorage().getDownloadUrl().getResult();
+//                                FriendlyMessage friendlyMessage =
+//                                        new FriendlyMessage(null, mUsername, downloadUrl.toString());
+//                                mMessageDatabaseReference.push().setValue(friendlyMessage);
+//                            }
+//                        });
             }
 
         }
